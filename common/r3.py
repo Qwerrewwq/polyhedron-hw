@@ -1,3 +1,4 @@
+import numpy as np
 from math import sin, cos
 
 
@@ -6,41 +7,51 @@ class R3:
 
     # Конструктор
     def __init__(self, x, y, z):
-        self.x, self.y, self.z = x, y, z
+        self._data = np.array([x, y, z], dtype=np.float64)
+
+    @property
+    def x(self):
+        return self._data[0]
+
+    @property
+    def y(self):
+        return self._data[1]
+
+    @property
+    def z(self):
+        return self._data[2]
 
     # Сумма векторов
     def __add__(self, other):
-        return R3(self.x + other.x, self.y + other.y, self.z + other.z)
+        return R3(*(self._data + other._data))
 
     # Разность векторов
     def __sub__(self, other):
-        return R3(self.x - other.x, self.y - other.y, self.z - other.z)
+        return R3(*(self._data - other._data))
 
     # Умножение на число
     def __mul__(self, k):
-        return R3(k * self.x, k * self.y, k * self.z)
+        return R3(*(self._data * k))
 
     # Поворот вокруг оси Oz
     def rz(self, fi):
-        return R3(
-            cos(fi) * self.x - sin(fi) * self.y,
-            sin(fi) * self.x + cos(fi) * self.y, self.z)
+        c, s = cos(fi), sin(fi)
+        rot = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]], dtype=np.float64)
+        return R3(*np.dot(rot, self._data))
 
     # Поворот вокруг оси Oy
     def ry(self, fi):
-        return R3(cos(fi) * self.x + sin(fi) * self.z,
-                  self.y, -sin(fi) * self.x + cos(fi) * self.z)
+        c, s = cos(fi), sin(fi)
+        rot = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]], dtype=np.float64)
+        return R3(*np.dot(rot, self._data))
 
     # Скалярное произведение
     def dot(self, other):
-        return self.x * other.x + self.y * other.y + self.z * other.z
+        return np.dot(self._data, other._data)
 
     # Векторное произведение
     def cross(self, other):
-        return R3(
-            self.y * other.z - self.z * other.y,
-            self.z * other.x - self.x * other.z,
-            self.x * other.y - self.y * other.x)
+        return R3(*np.cross(self._data, other._data))
 
 
 if __name__ == "__main__":
