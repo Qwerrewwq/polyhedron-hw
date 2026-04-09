@@ -3,19 +3,21 @@
 *.pyc
 __pycache__/
 
+# Build artifacts
+build/
+dist/
+
 # Virtual environments
 venv/
 .venv/
 .env
 .env.local
-*.env.*
 
-# IDE and editor files
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
 
 # Logs
 *.log
@@ -25,12 +27,22 @@ venv/
 coverage/
 htmlcov/
 
-# Python cache
-.mypy_cache/
-.pytest_cache/
+# Package manager caches
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Build artifacts
-dist/
-build/
-target/
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*~
 ```

@@ -28,6 +28,7 @@ class TkDrawer:
         self.root.bind('<Control-c>', quit)
         self.canvas = Canvas(self.root, width=SIZE, height=SIZE)
         self.canvas.pack(padx=5, pady=5)
+        self._pending_updates = False
 
     # Завершение работы
     def close(self):
@@ -38,10 +39,16 @@ class TkDrawer:
         self.canvas.create_rectangle(0, 0, SIZE, SIZE, fill="white")
         self.root.update()
 
-    # Рисование линии
+    # Рисование линии (без немедленного обновления экрана)
     def draw_line(self, p, q):
         self.canvas.create_line(x(p), y(p), x(q), y(q), fill="black", width=1)
-        self.root.update()
+        self._pending_updates = True
+    
+    # Принудительное обновление экрана
+    def flush(self):
+        if self._pending_updates:
+            self.root.update()
+            self._pending_updates = False
 
 
 if __name__ == "__main__":
