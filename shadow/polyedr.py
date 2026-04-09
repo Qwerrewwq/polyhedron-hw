@@ -1,8 +1,14 @@
+import numpy as np
 from math import pi
 from functools import reduce
 from operator import add
 from common.r3 import R3
-from common.tk_drawer import TkDrawer
+
+
+def _get_xy_funcs():
+    """Lazy load x, y functions from tk_drawer to avoid circular dependency"""
+    from common.tk_drawer import x, y
+    return x, y
 
 
 class Segment:
@@ -127,43 +133,71 @@ class Polyedr:
 
         # списки вершин, рёбер и граней полиэдра
         self.vertexes, self.edges, self.facets = [], [], []
+        
+        # Numpy массивы для оптимизированных вычислений
+        self.vertexes_array = None
 
         # список строк файла
         with open(file) as f:
-            for i, line in enumerate(f):
-                if i == 0:
-                    # обрабатываем первую строку; buf - вспомогательный массив
-                    buf = line.split()
-                    # коэффициент гомотетии
-                    c = float(buf.pop(0))
-                    # углы Эйлера, определяющие вращение
-                    alpha, beta, gamma = (float(x) * pi / 180.0 for x in buf)
-                elif i == 1:
-                    # во второй строке число вершин, граней и рёбер полиэдра
-                    nv, nf, ne = (int(x) for x in line.split())
-                elif i < nv + 2:
-                    # задание всех вершин полиэдра
-                    x, y, z = (float(x) for x in line.split())
-                    self.vertexes.append(R3(x, y, z).rz(
-                        alpha).ry(beta).rz(gamma) * c)
-                else:
-                    # вспомогательный массив
-                    buf = line.split()
-                    # количество вершин очередной грани
-                    size = int(buf.pop(0))
-                    # массив вершин этой грани
-                    vertexes = list(self.vertexes[int(n) - 1] for n in buf)
-                    # задание рёбер грани
-                    for n in range(size):
-                        self.edges.append(Edge(vertexes[n - 1], vertexes[n]))
-                    # задание самой грани
-                    self.facets.append(Facet(vertexes))
+            lines = f.readlines()
+            
+        # Первая строка: коэффициент гомотетии и углы Эйлера
+        buf = lines[0].split()
+        c = float(buf.pop(0))
+        alpha, beta, gamma = (float(x) * pi / 180.0 for x in buf)
+        
+        # Вторая строка: число вершин, граней и рёбер
+        nv, nf, ne = (int(x) for x in lines[1].split())
+        
+        # Чтение всех вершин
+        raw_vertices = []
+        for i in range(2, nv + 2):
+            x, y, z = (float(x) for x in lines[i].split())
+            raw_vertices.append((x, y, z))
+        
+        # Массовое применение поворота и масштабирования с помощью numpy
+        rotated = R3.rotate_vertices(raw_vertices, alpha, beta, gamma)
+        self.vertexes_array = rotated * c
+        
+        # Создание объектов R3 для обратной совместимости
+        for i in range(nv):
+            self.vertexes.append(R3(*self.vertexes_array[i]))
+        
+        # Чтение граней и создание рёбер
+        line_idx = nv + 2
+        for _ in range(nf):
+            buf = lines[line_idx].split()
+            line_idx += 1
+            size = int(buf.pop(0))
+            vertex_indices = [int(n) - 1 for n in buf]
+            vertexes = list(self.vertexes[n] for n in vertex_indices)
+            
+            # Задание рёбер грани
+            for n in range(size):
+                self.edges.append(Edge(vertexes[n - 1], vertexes[n]))
+            
+            # Задание самой грани
+            self.facets.append(Facet(vertexes))
 
     # Метод изображения полиэдра
     def draw(self, tk):
         tk.clean()
+        
+        # Обработка теней для всех рёбер
         for e in self.edges:
             for f in self.facets:
                 e.shadow(f)
+        
+        # Подготовка координат для массовой отрисовки
+        lines_coords = []
+        x_func, y_func = _get_xy_funcs()
+        for e in self.edges:
             for s in e.gaps:
-                tk.draw_line(e.r3(s.beg), e.r3(s.fin))
+                p1 = e.r3(s.beg)
+                p2 = e.r3(s.fin)
+                coord1 = (x_func(p1), y_func(p1))
+                coord2 = (x_func(p2), y_func(p2))
+                lines_coords.append((coord1, coord2))
+        
+        # Массовая отрисовка всех линий
+        tk.draw_lines_batch(lines_coords)

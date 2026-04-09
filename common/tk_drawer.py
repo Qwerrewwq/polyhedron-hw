@@ -1,4 +1,5 @@
 from tkinter import *
+import numpy as np
 
 # Размер окна
 SIZE = 900
@@ -17,7 +18,7 @@ def y(p):
 
 
 class TkDrawer:
-    """ Графический интерфейс """
+    """ Графический интерфейс с оптимизацией для быстрой отрисовки """
 
     # Конструктор
     def __init__(self):
@@ -28,6 +29,8 @@ class TkDrawer:
         self.root.bind('<Control-c>', quit)
         self.canvas = Canvas(self.root, width=SIZE, height=SIZE)
         self.canvas.pack(padx=5, pady=5)
+        # Кэш для координат
+        self._coord_cache = {}
 
     # Завершение работы
     def close(self):
@@ -41,6 +44,17 @@ class TkDrawer:
     # Рисование линии
     def draw_line(self, p, q):
         self.canvas.create_line(x(p), y(p), x(q), y(q), fill="black", width=1)
+        self.root.update()
+
+    # Массовая отрисовка линий (оптимизировано)
+    def draw_lines_batch(self, lines_coords):
+        """
+        lines_coords: список кортежей ((x1,y1), (x2,y2))
+        Отрисовывает все линии за один проход без обновления после каждой
+        """
+        for coord in lines_coords:
+            (x1, y1), (x2, y2) = coord
+            self.canvas.create_line(x1, y1, x2, y2, fill="black", width=1)
         self.root.update()
 
 
