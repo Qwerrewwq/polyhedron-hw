@@ -11,7 +11,11 @@ try:
         print("=============================================================")
         print(f"Начало работы с полиэдром '{name}'")
         start_time = time()
-        Polyedr(f"data/{name}.geom").draw(tk)
+        p = Polyedr(f"data/{name}.geom")
+        # Печать характеристики: сумма длин рёбер с «хорошими» концами
+        good_sum = p.good_edges_length_sum()
+        print(f"Сумма длин рёбер с «хорошими» концами: {good_sum}")
+        p.draw(tk)
         delta_time = time() - start_time
         print(f"Изображение полиэдра '{name}' заняло {delta_time} сек.")
         input("Hit 'Return' to continue -> ")

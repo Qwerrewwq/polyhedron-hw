@@ -1,8 +1,7 @@
-from math import pi
+from math import pi, sqrt
 from functools import reduce
 from operator import add
 from common.r3 import R3
-from common.tk_drawer import TkDrawer
 
 
 class Segment:
@@ -42,6 +41,20 @@ class Edge:
         self.beg, self.fin = beg, fin
         # Список «просветов»
         self.gaps = [Segment(Edge.SBEG, Edge.SFIN)]
+
+    @staticmethod
+    def is_good_point(p):
+        """Проверяет, является ли точка «хорошей»: проекция строго внутри x^2+y^2=4, но строго вне x^2+y^2=1"""
+        r_squared = p.x * p.x + p.y * p.y
+        return 1.0 < r_squared < 4.0
+
+    @staticmethod
+    def edge_length(beg, fin):
+        """Вычисляет длину ребра между двумя точками"""
+        dx = beg.x - fin.x
+        dy = beg.y - fin.y
+        dz = beg.z - fin.z
+        return sqrt(dx * dx + dy * dy + dz * dz)
 
     # Учёт тени от одной грани
     def shadow(self, facet):
@@ -167,3 +180,12 @@ class Polyedr:
                 e.shadow(f)
             for s in e.gaps:
                 tk.draw_line(e.r3(s.beg), e.r3(s.fin))
+
+    # Вычисление суммы длин рёбер, оба из концов которых — «хорошие» точки
+    def good_edges_length_sum(self):
+        """Возвращает сумму длин рёбер, у которых обе вершины являются «хорошими» точками"""
+        total = 0.0
+        for e in self.edges:
+            if Edge.is_good_point(e.beg) and Edge.is_good_point(e.fin):
+                total += Edge.edge_length(e.beg, e.fin)
+        return total
