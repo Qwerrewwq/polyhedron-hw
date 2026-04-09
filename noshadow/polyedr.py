@@ -1,6 +1,6 @@
 from math import pi
+import numpy as np
 from common.r3 import R3
-from common.tk_drawer import TkDrawer
 
 
 class Edge:

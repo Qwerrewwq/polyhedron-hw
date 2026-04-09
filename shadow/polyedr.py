@@ -1,8 +1,8 @@
 from math import pi
 from functools import reduce
 from operator import add
+import numpy as np
 from common.r3 import R3
-from common.tk_drawer import TkDrawer
 
 
 class Segment:
@@ -10,7 +10,7 @@ class Segment:
     # Параметры конструктора: начало и конец отрезка (числа)
 
     def __init__(self, beg, fin):
-        self.beg, self.fin = beg, fin
+        self.beg, self.fin = float(beg), float(fin)
 
     # Отрезок вырожден?
     def is_degenerate(self):
