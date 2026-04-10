@@ -303,6 +303,9 @@ void polyedr_free(Polyedr *p) {
 void polyedr_draw(Polyedr *p, TkDrawer *tk) {
     tk_clean(tk);
     
+    /* Настройка автоматического масштабирования */
+    tk_auto_scale(tk, p->vertexes, p->vertex_count);
+    
     for (int i = 0; i < p->edge_count; i++) {
         for (int j = 0; j < p->facet_count; j++) {
             edge_shadow(&p->edges[i], &p->facets[j]);
