@@ -262,7 +262,7 @@ int polyedr_init(Polyedr *p, const char *filename) {
                 fclose(file);
                 return -1;
             }
-        } else if (line_num < nv + 2) {
+        } else if (line_num <= nv + 1) {
             /* Vertex definitions */
             double x, y, z;
             sscanf(line, "%lf %lf %lf", &x, &y, &z);
