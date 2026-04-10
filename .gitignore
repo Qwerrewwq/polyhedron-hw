@@ -1,6 +1,53 @@
-node_modules/
-.env
-__pycache__/
-*.log
-.DS_Store
+```
+# Compiled and build artifacts
+*.o
+*.obj
+*.out
+run_noshadow
+run_shadow
+
+# Build directories
+build/
 dist/
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# MyPy
+.mypy_cache/
+
+# PyTest
+.pytest_cache/
+
+# Gradle
+.gradle/
+
+# Target (Rust, etc.)
+target/
+```
