@@ -3,51 +3,43 @@
 *.o
 *.obj
 *.out
-run_noshadow
-run_shadow
-
-# Build directories
-build/
-dist/
+*.a
+*.so
+*.dll
+*.exe
 
 # Dependencies
 node_modules/
-.venv/
 venv/
+.venv/
 __pycache__/
+.mypy_cache/
+.pytest_cache/
+dist/
+build/
+target/
+.gradle/
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 
-# Environment
-.env
-.env.local
-*.env.*
-
 # Editors
 .vscode/
 .idea/
 
-# OS specific
-.DS_Store
-Thumbs.db
+# Environment
+.env
+.env.local
+*.env.*
 
 # Coverage
 coverage/
 htmlcov/
 .coverage
 
-# MyPy
-.mypy_cache/
-
-# PyTest
-.pytest_cache/
-
-# Gradle
-.gradle/
-
-# Target (Rust, etc.)
-target/
+# System
+.DS_Store
+Thumbs.db
 ```

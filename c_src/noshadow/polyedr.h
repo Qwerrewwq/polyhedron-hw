@@ -22,9 +22,9 @@ typedef struct {
 } Facet;
 
 /* Полиэдр */
-#define MAX_VERTEXES 1000
-#define MAX_EDGES 5000
-#define MAX_FACETS 1000
+#define MAX_VERTEXES 5000
+#define MAX_EDGES 20000
+#define MAX_FACETS 5000
 
 typedef struct {
     R3 vertexes[MAX_VERTEXES];

@@ -66,9 +66,9 @@ typedef struct FacetStruct {
 } Facet;
 
 /* Полиэдр */
-#define MAX_VERTEXES 1000
-#define MAX_EDGES 5000
-#define MAX_FACETS 1000
+#define MAX_VERTEXES 5000
+#define MAX_EDGES 20000
+#define MAX_FACETS 5000
 
 /* Вектор проектирования */
 static const R3 POLYEDR_V = {0.0, 0.0, 1.0};
