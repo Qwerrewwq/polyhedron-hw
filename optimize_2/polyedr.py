@@ -1,4 +1,5 @@
 from math import pi
+from time import time
 from functools import reduce
 from operator import add
 from common.r3 import R3
@@ -159,11 +160,34 @@ class Polyedr:
                     # задание самой грани
                     self.facets.append(Facet(vertexes))
 
-    # Метод изображения полиэдра
-    def draw(self, tk):  # pragma: no cover
-        tk.clean()
+    # Удаление дубликатов рёбер
+    def edges_uniq(self):
+        edges = {}
+        for e in self.edges:
+            if (e.beg, e.fin) not in edges and (e.fin, e.beg) not in edges:
+                edges[(e.beg, e.fin)] = e
+        self.edges = list(edges.values())
+
+    # Оптимизация
+    def optimize(self):
+        stage_time = time()
+        result = "   Удаление дубликатов рёбер\n" + \
+            "     Рёбер до    : %6d\n" % len(self.edges)
+        self.edges_uniq()
+        result += "     Рёбер после : %6d\n" % len(self.edges) + \
+            "     Время       : %6.2f сек." % (time() - stage_time)
+        return result
+
+    # Нахождение «просветов»
+    def shadow(self):
         for e in self.edges:
             for f in self.facets:
                 e.shadow(f)
+        return self
+
+    # Метод изображения полиэдра
+    def draw(self, tk):
+        tk.clean()
+        for e in self.edges:
             for s in e.gaps:
                 tk.draw_line(e.r3(s.beg), e.r3(s.fin))

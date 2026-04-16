@@ -1,4 +1,5 @@
 from math import pi
+from time import time
 from functools import reduce
 from operator import add
 from common.r3 import R3
@@ -90,31 +91,38 @@ class Facet:
 
     # «Вертикальна» ли грань?
     def is_vertical(self):
-        return self.h_normal().dot(Polyedr.V) == 0.0
+        return self._is_vertical
 
     # Нормаль к «горизонтальному» полупространству
     def h_normal(self):
-        n = (
-            self.vertexes[1] - self.vertexes[0]).cross(
-            self.vertexes[2] - self.vertexes[0])
-        return n * (-1.0) if n.dot(Polyedr.V) < 0.0 else n
+        return self._h_normal
 
     # Нормали к «вертикальным» полупространствам, причём k-я из них
     # является нормалью к грани, которая содержит ребро, соединяющее
     # вершины с индексами k-1 и k
     def v_normals(self):
-        return [self._vert(x) for x in range(len(self.vertexes))]
+        return self._v_normals
+
+    # Центр грани
+    def center(self):
+        return self._center
+
+    # Предкомпиляция грани
+    def precompile(self):
+        self._center = sum(self.vertexes, R3(0.0, 0.0, 0.0)
+                           ) * (1.0 / len(self.vertexes))
+        n = (
+            self.vertexes[1] - self.vertexes[0]).cross(
+            self.vertexes[2] - self.vertexes[0])
+        self._h_normal = n * (-1.0) if n.dot(Polyedr.V) < 0.0 else n
+        self._v_normals = [self._vert(x) for x in range(len(self.vertexes))]
+        self._is_vertical = self.h_normal().dot(Polyedr.V) == 0.0
 
     # Вспомогательный метод
     def _vert(self, k):
         n = (self.vertexes[k] - self.vertexes[k - 1]).cross(Polyedr.V)
         return n * \
             (-1.0) if n.dot(self.vertexes[k - 1] - self.center()) < 0.0 else n
-
-    # Центр грани
-    def center(self):
-        return sum(self.vertexes, R3(0.0, 0.0, 0.0)) * \
-            (1.0 / len(self.vertexes))
 
 
 class Polyedr:
@@ -159,11 +167,39 @@ class Polyedr:
                     # задание самой грани
                     self.facets.append(Facet(vertexes))
 
-    # Метод изображения полиэдра
-    def draw(self, tk):  # pragma: no cover
-        tk.clean()
+    # Удаление дубликатов рёбер
+    def edges_uniq(self):
+        edges = {}
+        for e in self.edges:
+            if (e.beg, e.fin) not in edges and (e.fin, e.beg) not in edges:
+                edges[(e.beg, e.fin)] = e
+        self.edges = list(edges.values())
+
+    # Оптимизация
+    def optimize(self):
+        stage_time = time()
+        result = "   Удаление дубликатов рёбер\n" + \
+            "     Рёбер до    : %6d\n" % len(self.edges)
+        self.edges_uniq()
+        result += "     Рёбер после : %6d\n" % len(self.edges) + \
+            "     Время       : %6.2f сек.\n" % (time() - stage_time)
+        stage_time = time()
+        for f in self.facets:
+            f.precompile()
+        result += "   Предкомпиляция граней\n" + \
+            "     Время       : %6.2f сек." % (time() - stage_time)
+        return result
+
+    # Нахождение «просветов»
+    def shadow(self):
         for e in self.edges:
             for f in self.facets:
                 e.shadow(f)
+        return self
+
+    # Метод изображения полиэдра
+    def draw(self, tk):
+        tk.clean()
+        for e in self.edges:
             for s in e.gaps:
                 tk.draw_line(e.r3(s.beg), e.r3(s.fin))

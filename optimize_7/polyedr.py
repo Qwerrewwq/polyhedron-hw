@@ -1,4 +1,6 @@
-from math import pi
+from math import pi, sqrt, floor, ceil
+from time import time
+from random import randrange
 from functools import reduce
 from operator import add
 from common.r3 import R3
@@ -45,9 +47,15 @@ class Edge:
 
     # Учёт тени от одной грани
     def shadow(self, facet):
-        # «Вертикальная» грань не затеняет ничего
-        if facet.is_vertical():
+        # Не надо ничего делать, если «просветов» на ребере не осталось
+        if len(self.gaps) == 0:
             return
+
+        # «Низкие» и «вертикальные» грани не могут затенить ребро
+        if ((self.beg.z >= facet.zmax and self.fin.z >= facet.zmax) or
+                facet.is_vertical()):
+            return
+
         # Нахождение одномерной тени на ребре
         shade = Segment(Edge.SBEG, Edge.SFIN)
         for u, v in zip(facet.vertexes, facet.v_normals()):
@@ -90,31 +98,43 @@ class Facet:
 
     # «Вертикальна» ли грань?
     def is_vertical(self):
-        return self.h_normal().dot(Polyedr.V) == 0.0
+        return self._is_vertical
 
     # Нормаль к «горизонтальному» полупространству
     def h_normal(self):
-        n = (
-            self.vertexes[1] - self.vertexes[0]).cross(
-            self.vertexes[2] - self.vertexes[0])
-        return n * (-1.0) if n.dot(Polyedr.V) < 0.0 else n
+        return self._h_normal
 
     # Нормали к «вертикальным» полупространствам, причём k-я из них
     # является нормалью к грани, которая содержит ребро, соединяющее
     # вершины с индексами k-1 и k
     def v_normals(self):
-        return [self._vert(x) for x in range(len(self.vertexes))]
+        return self._v_normals
+
+    # Центр грани
+    def center(self):
+        return self._center
+
+    # Предкомпиляция грани
+    def precompile(self):
+        self._center = sum(self.vertexes, R3(0.0, 0.0, 0.0)
+                           ) * (1.0 / len(self.vertexes))
+        n = (
+            self.vertexes[1] - self.vertexes[0]).cross(
+            self.vertexes[2] - self.vertexes[0])
+        self._h_normal = n * (-1.0) if n.dot(Polyedr.V) < 0.0 else n
+        self._v_normals = [self._vert(x) for x in range(len(self.vertexes))]
+        self._is_vertical = self.h_normal().dot(Polyedr.V) == 0.0
+        self.zmax = max(v.z for v in self.vertexes)
+        self.xmin = min(v.x for v in self.vertexes)
+        self.ymin = min(v.y for v in self.vertexes)
+        self.xmax = max(v.x for v in self.vertexes)
+        self.ymax = max(v.y for v in self.vertexes)
 
     # Вспомогательный метод
     def _vert(self, k):
         n = (self.vertexes[k] - self.vertexes[k - 1]).cross(Polyedr.V)
         return n * \
             (-1.0) if n.dot(self.vertexes[k - 1] - self.center()) < 0.0 else n
-
-    # Центр грани
-    def center(self):
-        return sum(self.vertexes, R3(0.0, 0.0, 0.0)) * \
-            (1.0 / len(self.vertexes))
 
 
 class Polyedr:
@@ -159,11 +179,80 @@ class Polyedr:
                     # задание самой грани
                     self.facets.append(Facet(vertexes))
 
+    # Удаление дубликатов рёбер
+    def edges_uniq(self):
+        edges = {}
+        for e in self.edges:
+            if (e.beg, e.fin) not in edges and (e.fin, e.beg) not in edges:
+                edges[(e.beg, e.fin)] = e
+        self.edges = list(edges.values())
+
+    # Оптимизация
+    def optimize(self):
+        stage_time = time()
+        result = "   Удаление дубликатов рёбер\n" + \
+            "     Рёбер до    : %6d\n" % len(self.edges)
+        self.edges_uniq()
+        result += "     Рёбер после : %6d\n" % len(self.edges) + \
+            "     Время       : %6.2f сек.\n" % (time() - stage_time)
+        stage_time = time()
+        for f in self.facets:
+            f.precompile()
+        result += "   Предкомпиляция граней\n" + \
+            "     Время       : %6.2f сек.\n" % (time() - stage_time)
+        stage_time = time()
+        self.facets_nests()
+        result += "   Гнездование граней\n" + \
+            "     Размер гнёзд: %6.2f\n" % self.step + \
+            "     Время       : %6.2f сек." % (time() - stage_time)
+        return result
+
+    # «Умное» нахождение «просветов» на ребре
+    def smart_shadow(self, e):
+        # Хэш учтённых граней
+        processed = {}
+        for i in self.to_range(e.beg.x, e.fin.x):
+            for j in self.to_range(e.beg.y, e.fin.y):
+                for f in self.nests[(i, j)]:
+                    if f not in processed:
+                        processed[f] = True
+                        if len(e.gaps) > 0:
+                            e.shadow(f)
+                        else:
+                            return
+
+    # Нахождение «просветов»
+    def shadow(self):
+        for e in self.edges:
+            self.smart_shadow(e)
+        return self
+
     # Метод изображения полиэдра
-    def draw(self, tk):  # pragma: no cover
+    def draw(self, tk):
         tk.clean()
         for e in self.edges:
-            for f in self.facets:
-                e.shadow(f)
             for s in e.gaps:
                 tk.draw_line(e.r3(s.beg), e.r3(s.fin))
+
+    # Размещение граней по гнёздам
+    def facets_nests(self):
+        COUNT = 100
+        self.nests = {}
+        # Вычисление оптимального размера гнёзд сетки
+        edges = [self.edges[randrange(len(self.edges))] for i in range(COUNT)]
+        self.step = sum((sqrt((e.fin.x - e.beg.x)**2 + (e.fin.y - e.beg.y)**2)
+                         for e in edges)) / (2 * COUNT)
+        for f in self.facets:
+            for i in self.to_range(f.xmin, f.xmax):
+                for j in self.to_range(f.ymin, f.ymax):
+                    key = (i, j)
+                    if key in self.nests:
+                        self.nests[key].append(f)
+                    else:
+                        self.nests[key] = [f]
+
+    # Диапазон индексов гнёзд для отрезка
+    def to_range(self, t1, t2):
+        if t1 > t2:
+            t1, t2 = t2, t1
+        return range(floor(t1 / self.step), ceil(t2 / self.step) + 1)

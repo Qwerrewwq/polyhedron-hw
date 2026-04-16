@@ -159,11 +159,16 @@ class Polyedr:
                     # задание самой грани
                     self.facets.append(Facet(vertexes))
 
-    # Метод изображения полиэдра
-    def draw(self, tk):  # pragma: no cover
-        tk.clean()
+    # Нахождение «просветов»
+    def shadow(self):
         for e in self.edges:
             for f in self.facets:
                 e.shadow(f)
+        return self
+
+    # Метод изображения полиэдра
+    def draw(self, tk):
+        tk.clean()
+        for e in self.edges:
             for s in e.gaps:
                 tk.draw_line(e.r3(s.beg), e.r3(s.fin))
